@@ -20,7 +20,7 @@ module Selection
         WHERE id IN (#{ids.join(",")});
       SQL
 
-      rows_to_array(rows)
+    puts rows_to_array(rows)
     end
   end
 
@@ -119,10 +119,68 @@ module Selection
    end
 
    def method_missing(m, *args, &block)
-      if m == :find_by_name && args.length == 1
+      if m == :find_by_name
         find_by(:name, args[0])
       end
     end
+
+    def where(*args)
+     if args.count > 1
+       expression = args.shift
+       params = args
+     else
+       case args.first
+       when String
+         expression = args.first
+       when Hash
+         expression_hash = BlocWreckard::Utility.convert_keys(args.first)
+         expression = expression_hash.map {|key, value| "#{key}=#{BlocWreckard::Utility.sql_strings(value)}"}.join(" and ")
+       end
+     end
+
+     sql = <<-SQL
+       SELECT #{columns.join ","} FROM #{table}
+       WHERE #{expression};
+     SQL
+
+     rows = connection.execute(sql, params)
+     rows_to_array(rows)
+   end
+
+   def order(*args) 
+     if args.count > 1
+       order = args.join(",")
+     else
+       order = args.first.to_s
+     end
+      rows = connection.execute <<-SQL
+        SELECT * FROM #{table}
+        ORDER BY #{order};
+      SQL
+      rows_to_array(rows)
+   end
+
+   def join(*arg)
+     if args.count > 1
+       joins = args.map { |arg| "INNER JOIN #{arg} ON #{arg}.#{table}_id = #{table}.id"}.join(" ")
+       rows = connection.execute <<-SQL
+         SELECT * FROM #{table} #{joins}
+       SQL
+       case args.first
+       when String
+         rows = connection.execute <<-SQL
+           SELECT * FROM #{table} #{BlocWreckard::Utility.sql_strings(args.first)};
+         SQL
+       when Symbol
+         rows = connection.execute <<-SQL
+           SELECT * FROM #{table}
+           INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
+         SQL
+       end
+     end
+    rows_to_array(rows)
+   end
+
 
    private
    # Allow us to retrieve records if we know the values of other attribues

@@ -2,6 +2,15 @@ require 'sqlite3'
 require_relative 'schema'
 
 module Persistence
+  # A few quick notes about self:
+  # 'self' is the "current object" and the default receiver of messages
+  # (method calls) for which no explicit receiver is specified.
+
+  # '.included()' callback invoked whenever the receiver is included in another module or class.
+  # This should be used in preference to Module.append_features if your code wants
+  # to perform some action when a module is included in another.
+
+  
   def self.included(base)
      base.extend(ClassMethods)
    end
@@ -28,6 +37,17 @@ module Persistence
 
      true
    end
+
+   # converts hash 'attrs' keys to string,
+   # delete the attribute/column name 'id'
+   # calling .map on the attributes method (which in turn calls columns, which in turn calls schema),
+   # an array of values is created and converted to strings.
+
+   # the () around #{attributes.join ","} specificy which column their corresponding values will be
+   # inserted into.
+
+   # finally, a new ruby Character object is created and returned in the form of the newly
+   # created objects id
 
    def create(attrs)
        attrs = BlocWreckard::Utility.convert_keys(attrs)
