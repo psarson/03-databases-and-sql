@@ -9,13 +9,12 @@ module Persistence
   # '.included()' callback is invoked whenever the receiver is included in another module or class.
   # This should be used in preference to Module.append_features if your code wants
   # to perform some action when a module is included in another.
-
-  #         THESE ARE INSTANCE METHODS
-  #                 vvvvvvvvv
   def self.included(base)
      base.extend(ClassMethods)
    end
 
+  #         THESE ARE INSTANCE METHODS
+  #                 vvvvvvvvv
   # update_attribute passes self.class.update its own id and a hash
   # of the attributes that should be updated.
 
@@ -26,6 +25,8 @@ module Persistence
   def update_attribute(attribute, value)
     self.class.update(self.id, { attribute => value })
   end
+
+  #plural version of update_attribute, takes an array of hashes
 
   def update_attributes(updates)
     self.class.update(self.id, updates)
@@ -102,8 +103,15 @@ module Persistence
 
        #Use map to convert updates to an array of strings where each string
        #is in the format "KEY=VALUE". This updates the specified columns in the database.
-       updates_array = updates.map { |key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+        if updates.length == 1
+          updates_array = updates.map { |key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+        else
+          updates_array = []
 
+          updates.map do |hash|
+            updates_array << hash.map { |key, value|  "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+          end
+        end
        #we build a fully formed SQL statement to update the database
        #and execute it using connection.execute
        connection.execute <<-SQL
@@ -111,15 +119,33 @@ module Persistence
          SET #{updates_array * ","}
          WHERE id = #{id};
        SQL
+
        true
        # When this string is interpolated it will be a fully formed SQL statement with this format:
        #    UPDATE table_name
        #    SET column1=value1, column2=value2, ...
        #    WHERE id=id1;
+       # method will return true
      end
 
      def update_all(updates)
        update(nil, updates)
+     end
+
+     def self.method_missing(method_sym, *arguments, &block)
+       if method_sym.to_s =~ /^update_name(.*)$/
+         update($1.to_sym => arguments.first)
+       else
+         super
+       end
+     end
+
+     def self.respond_to?(method_sym, include_private = false)
+       if method_sym.to_s =~ /^update_name(.*)$/
+         true
+       else
+         super
+       end
      end
 
 end
