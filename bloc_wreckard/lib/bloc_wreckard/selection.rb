@@ -147,22 +147,29 @@ module Selection
      rows_to_array(rows)
    end
 
-   def order(*args) 
-     if args.count > 1
-       order = args.join(",")
-     else
-       order = args.first.to_s
-     end
-      rows = connection.execute <<-SQL
-        SELECT * FROM #{table}
-        ORDER BY #{order};
-      SQL
-      rows_to_array(rows)
+  def order(*args)
+    order = []
+    args.each do |ar|
+      case ar
+      when Symbol
+        order << ar.to_s
+      when Hash
+        order << hash_to_array(ar).join(", ")
+      when String
+        order << ar
+      end
+      order_str = order.join(", ")
+    end
+    rows = connection.execute <<-SQL
+      SELECT * FROM #{table}
+      ORDER BY #{order_str};
+    SQL
+    rows_to_array(rows)
    end
 
    def join(*arg)
      if args.count > 1
-       joins = args.map { |arg| "INNER JOIN #{arg} ON #{arg}.#{table}_id = #{table}.id"}.join(" ")
+       joins = args.map {|arg| "INNER JOIN #{arg} ON #{arg}.#{table}_id = #{table}.id"}.join(" ")
        rows = connection.execute <<-SQL
          SELECT * FROM #{table} #{joins}
        SQL
@@ -176,8 +183,14 @@ module Selection
            SELECT * FROM #{table}
            INNER JOIN #{args.first} ON #{args.first}.#{table}_id = #{table}.id
          SQL
-       end
-     end
+        when Hash
+          rows = connection.execute <<-SQL
+              SELECT * FROM #{table}
+              INNER JOIN #{args.keys.to_s} ON #{args.keys.to_s}.#{table}_id = #{table}.id
+              INNER JOIN #{args.values.to_s} ON #{args.values.to_s}.#{args.keys.to_s}_id = #{args.keys.to_s}.id
+          SQL
+        end
+      end
     rows_to_array(rows)
    end
 
@@ -193,5 +206,18 @@ module Selection
 
    def rows_to_array(rows)
      rows.map { |row| new(Hash[columns.zip(row)]) }
+   end
+
+   def hash_to_array (*args)
+     a = args[0].keys.to_a.map { |el| el.to_s }
+     b = args[0].values.to_a.map {|el| el.to_s}
+
+     c = a.zip(b)
+
+     c.each do |el|
+       el[1].upcase!
+     end
+
+     c.map { |e| e.join(" ") }
    end
 end

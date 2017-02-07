@@ -4,7 +4,7 @@ require 'sqlite3'
 
    # In calling SQLite3::Database.new, you are creating a new Database Object
    # from the Database class in SQLite3, if you recall, BlocWreckard has saved
-   # the file name of the App's database - when 'connection' is called, it returns
+   # the file name/path of the App's database - when 'connection' is called, it returns
    # the instance variable @connection, which itself is an instance of the app's
    # database.
 
@@ -26,5 +26,4 @@ require 'sqlite3'
   #  created if possible. By default, the new database will return result rows as arrays
   #  (results_as_hash)
   #
-  #  Since the '.new' method was passed the filename 'db/address_bloc.sqlite', it will
-  #  open said file as a sqlite file.  
+  

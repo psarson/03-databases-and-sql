@@ -32,6 +32,7 @@ module BlocWreckard
      #
      # An 'options' hash is a special type of ruby argument that has the default
      # value of an empty hash '{}'
+     #
      # ** arguments passed to the 'options' hash must be passed as hash
      #  ex: def opts(options), opts(1, 2, 3) would return
      #      'wrong number of arguments (given 3, expected 1)'
@@ -80,7 +81,7 @@ module BlocWreckard
      #  using the find method in the Selection module.
      #
      #  Calling .class returns the class of obj. This method must always be called with
-     #  an explicit receiver, as class is also a reserved word in Ruby. 
+     #  an explicit receiver, as class is also a reserved word in Ruby.
      #
      #
      #
