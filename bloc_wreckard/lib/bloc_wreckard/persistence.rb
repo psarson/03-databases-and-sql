@@ -6,14 +6,30 @@ module Persistence
   # 'self' is the "current object" and the default receiver of messages
   # (method calls) for which no explicit receiver is specified.
 
-  # '.included()' callback invoked whenever the receiver is included in another module or class.
+  # '.included()' callback is invoked whenever the receiver is included in another module or class.
   # This should be used in preference to Module.append_features if your code wants
   # to perform some action when a module is included in another.
 
-  
+  #         THESE ARE INSTANCE METHODS
+  #                 vvvvvvvvv
   def self.included(base)
      base.extend(ClassMethods)
    end
+
+  # update_attribute passes self.class.update its own id and a hash
+  # of the attributes that should be updated.
+
+  # ex.
+  # p = Person.first
+  # p.update_attribute(:name, "Ben")
+
+  def update_attribute(attribute, value)
+    self.class.update(self.id, { attribute => value })
+  end
+
+  def update_attributes(updates)
+    self.class.update(self.id, updates)
+  end
 
   module ClassMethods
    def save
@@ -64,4 +80,46 @@ module Persistence
        new(data)
      end
    end
+
+   # 'update(id, updates)' takes id and a column, row value hash, converts them to SQL format. Using the
+   # UPDATE clause, the row in question is changed to reflect the new values. Returns
+   # Boolean true
+
+   def update(ids, updates)
+       #Convert the non-id parameters to an array.
+       updates = BlocRecord::Utility.convert_keys(updates)
+       updates.delete "id"
+
+       #  Logic statements determine class type of ids
+       #  We are appending ids in the form of a string to the WHERE clause.
+       if ids.class == Fixnum
+         where_clause = "WHERE id = #{ids};"
+       elsif ids.class == Array
+         where_clause = ids.empty? ? ";" : "WHERE id IN (#{ids.join(",")});"
+       else
+         where_clause = ";"
+       end
+
+       #Use map to convert updates to an array of strings where each string
+       #is in the format "KEY=VALUE". This updates the specified columns in the database.
+       updates_array = updates.map { |key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+
+       #we build a fully formed SQL statement to update the database
+       #and execute it using connection.execute
+       connection.execute <<-SQL
+         UPDATE #{table}
+         SET #{updates_array * ","}
+         WHERE id = #{id};
+       SQL
+       true
+       # When this string is interpolated it will be a fully formed SQL statement with this format:
+       #    UPDATE table_name
+       #    SET column1=value1, column2=value2, ...
+       #    WHERE id=id1;
+     end
+
+     def update_all(updates)
+       update(nil, updates)
+     end
+
 end

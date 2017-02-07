@@ -7,18 +7,19 @@ require 'bloc_wreckard/schema'
 require 'bloc_wreckard/persistence'
 require 'bloc_wreckard/selection'
 require 'bloc_wreckard/connection'
+require 'bloc_record/collection'
 
 module BlocWreckard
   class Base
      # The methods in a module may be instance methods or module methods.
-     # Instance methods appear as methods in a class when the module is included, module methods do not. 
+     # Instance methods appear as methods in a class when the module is included, module methods do not.
      include Persistence
 
      # extend (-ing) a module makes its class methods available
      extend Selection
      extend Schema
      extend Connection
-
+     extend Collection
 
      # After filtering the options hash using convert_keys, this method iterates over each column.
      # This method uses self.class to get the class's dynamic, runtime type, and calls columns on that type.
