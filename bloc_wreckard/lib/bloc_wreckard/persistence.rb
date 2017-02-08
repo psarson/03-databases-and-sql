@@ -32,6 +32,10 @@ module Persistence
     self.class.update(self.id, updates)
   end
 
+  def destroy
+     self.class.destroy(self.id)
+   end
+
   module ClassMethods
    def save
      self.save! rescue false
@@ -88,7 +92,7 @@ module Persistence
 
    def update(ids, updates)
        #Convert the non-id parameters to an array.
-       updates = BlocRecord::Utility.convert_keys(updates)
+       updates = BlocWreckard::Utility.convert_keys(updates)
        updates.delete "id"
 
        #  Logic statements determine class type of ids
@@ -104,12 +108,12 @@ module Persistence
        #Use map to convert updates to an array of strings where each string
        #is in the format "KEY=VALUE". This updates the specified columns in the database.
         if updates.length == 1
-          updates_array = updates.map { |key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+          updates_array = updates.map { |key, value| "#{key}=#{BlocWreckard::Utility.sql_strings(value)}" }
         else
           updates_array = []
 
           updates.map do |hash|
-            updates_array << hash.map { |key, value|  "#{key}=#{BlocRecord::Utility.sql_strings(value)}" }
+            updates_array << hash.map { |key, value|  "#{key}=#{BlocWreckard::Utility.sql_strings(value)}" }
           end
         end
        #we build a fully formed SQL statement to update the database
@@ -130,6 +134,37 @@ module Persistence
 
      def update_all(updates)
        update(nil, updates)
+     end
+
+     def destroy(*id)
+       if id.length > 1
+         where_clause = "WHERE id IN (#{id.join(",")});"
+       else
+         where_clause = "WHERE id = #{id.first};"
+       end
+
+       connection.execute <<-SQL
+         DELETE FROM DELETE FROM #{table} #{where_clause}
+       SQL
+
+       true
+     end
+
+     def destroy_all(conditions_hash=nil)
+       if conditions_hash && !conditions_hash.empty?
+         conditions_hash = BlocRecord::Utility.convert_keys(conditions_hash)
+         conditions = conditions_hash.map {|key, value| "#{key}=#{BlocRecord::Utility.sql_strings(value)}"}.join(" and ")
+
+         connection.execute <<-SQL
+           DELETE FROM #{table}
+           WHERE #{conditions};
+         SQL
+       else
+         connection.execute <<-SQL
+           DELETE FROM #{table}
+         SQL
+       end 
+       true
      end
 
      def self.method_missing(method_sym, *arguments, &block)
