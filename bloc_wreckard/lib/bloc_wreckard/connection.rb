@@ -26,4 +26,3 @@ require 'sqlite3'
   #  created if possible. By default, the new database will return result rows as arrays
   #  (results_as_hash)
   #
-  

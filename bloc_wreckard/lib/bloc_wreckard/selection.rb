@@ -1,6 +1,7 @@
 require 'sqlite3'
 
 module Selection
+
   def find(*ids)
     if !ids.is_a? Array
       puts "Invalid Input"
@@ -228,7 +229,7 @@ module Selection
    end
 
    def rows_to_array(rows)
-     collection = BlocRecord::Collection.new
+     collection = BlocWreckard::Collection.new
      rows.each { |row| collection << new(Hash[columns.zip(row)]) }
      collection
    end
