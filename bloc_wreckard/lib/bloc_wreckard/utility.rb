@@ -2,7 +2,7 @@ module BlocWreckard
   # to check syntax, $ ruby -c filename.rb
    module Utility
      # In this context, self refers to the Utility class, making this module's method's
-     # class methods, rather than instance methods. 
+     # class methods, rather than instance methods.
      extend self
 
      # Converts TextLikeThis into text_like_this in order to maintain proper naming conventions.

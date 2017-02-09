@@ -1,5 +1,4 @@
 module BlocWreckard
-
    class Collection < Array
 
      def update_all(updates)
@@ -14,7 +13,5 @@ module BlocWreckard
      def where(*args)
        self.any? ? self.first.class.where(*args) : false
      end
-
    end
-
  end

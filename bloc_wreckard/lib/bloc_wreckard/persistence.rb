@@ -7,19 +7,6 @@ module Persistence
      base.extend(ClassMethods)
    end
 
-    def update_attribute(attribute, value)
-      self.class.update(self.id, { attribute => value })
-    end
-
-    def update_attributes(updates)
-      self.class.update(self.id, updates)
-    end
-
-    def destroy
-      self.class.destroy(self.id)
-    end
-
-  module ClassMethods
    def save
      self.save! rescue false
    end
@@ -42,6 +29,33 @@ module Persistence
      true
    end
 
+    def update_attribute(attribute, value)
+      self.class.update(self.id, { attribute => value })
+    end
+
+    def update_attributes(updates)
+      self.class.update(self.id, updates)
+    end
+
+    def destroy
+      self.class.destroy(self.id)
+    end
+
+    def destory_all
+      ids = self.map(&:id)
+      self.class.destroy(ids)
+    end
+
+    def update_attribute(attribute, value)
+      self.class.update(self.id, { attribute => value })
+    end
+
+    def update_attributes(updates)
+      self.class.update(self.id, updates)
+    end
+
+  module ClassMethods
+
    def create(attrs)
        attrs = BlocWreckard::Utility.convert_keys(attrs)
        attrs.delete "id"
@@ -61,7 +75,7 @@ module Persistence
    def update(ids, updates)
        updates = BlocWreckard::Utility.convert_keys(updates)
        updates.delete "id"
-
+       updates_array = updates.map { |key, value| "#{key}=#{BlocWreckard::Utility.sql_strings(value)}" }
 
        if ids.class == Fixnum
          where_clause = "WHERE id = #{ids};"
@@ -71,18 +85,16 @@ module Persistence
          where_clause = ";"
        end
 
-      if updates.length == 1
-        updates_array = updates.map { |key, value| "#{key}=#{BlocWreckard::Utility.sql_strings(value)}" }
-      else
+      if updates.length > 1
         updates_array = []
         updates.map do |hash|
           updates_array << hash.map { |key, value|  "#{key}=#{BlocWreckard::Utility.sql_strings(value)}" }
         end
       end
+
       connection.execute <<-SQL
          UPDATE #{table}
-         SET #{updates_array * ","}
-         WHERE id = #{id};
+         SET #{updates_array * ","} #{where_clause}
        SQL
 
        true
@@ -106,22 +118,52 @@ module Persistence
        true
      end
 
-     def destroy_all(conditions_hash=nil)
-       if conditions_hash && !conditions_hash.empty?
-         conditions_hash = BlocWreckard::Utility.convert_keys(conditions_hash)
-         conditions = conditions_hash.map {|key, value| "#{key}=#{BlocWreckard::Utility.sql_strings(value)}"}.join(" and ")
+     def destroy_all(conditions=nil)
+       if conditions
+         case conditions
+         when Hash
+           if !conditions.empty?
+           conditions_hash = BlocWreckard::Utility.convert_keys(conditions)
+           conditions_array = conditions.map {|key, value| "#{key}=#{BlocWreckard::Utility.sql_strings(value)}"}.join(" and ")
 
-         connection.execute <<-SQL
-           DELETE FROM #{table}
-           WHERE #{conditions};
-         SQL
-       else
-         connection.execute <<-SQL
-           DELETE FROM #{table}
-         SQL
-       end
-       true
+           connection.execute <<-SQL
+             DELETE FROM #{table}
+             WHERE #{conditions_array};
+           SQL
+         else
+           connection.execute <<-SQL
+             DELETE FROM #{table}
+           SQL
+         end
+         when String
+           conditions_string = BlocWreckard::Utility.sql_strings(conditions)
+           connection.execute <<-SQL
+             DELETE FROM #{table}
+             WHERE #{conditions_string};
+           SQL
+           else
+             connection.execute <<-SQL
+               DELETE FROM #{table}
+             SQL
+         when Array
+           if !conditions.empty?
+           conditions_array = conditions.map {|el| "#{BlocWreckard::Utility.sql_strings(el)}"}
+           connection.execute <<-SQL
+             DELETE FROM #{table}
+             WHERE #{conditions_array};
+           SQL
+           else
+             connection.execute <<-SQL
+               DELETE FROM #{table}
+            SQL
+           end
+         end
+        end
+      true
      end
+
+
+     private
 
      def self.method_missing(method_sym, *arguments, &block)
        if method_sym.to_s =~ /^update_name(.*)$/
