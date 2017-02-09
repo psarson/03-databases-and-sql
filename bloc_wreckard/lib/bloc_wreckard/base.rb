@@ -8,6 +8,7 @@ require 'bloc_wreckard/persistence'
 require 'bloc_wreckard/selection'
 require 'bloc_wreckard/connection'
 require 'bloc_wreckard/collection'
+require 'bloc_record/associations'
 
 module BlocWreckard
   class Base
@@ -15,6 +16,7 @@ module BlocWreckard
      extend Selection
      extend Schema
      extend Connection
+     extend Associations
 
      def initialize(options={})
        options = BlocWreckard::Utility.convert_keys(options)
